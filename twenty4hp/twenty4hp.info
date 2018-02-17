@@ -1,0 +1,11 @@
+name = twenty4hp
+description = 24hourproject custom module.
+package = Twenty4hp modules
+core = 7.x
+
+; Information added by Vindesh packaging script on 2018-01-18
+version = "7.x-1"
+core = "7.x"
+project = "Twenty4hp"
+datestamp = "1484076787"
+

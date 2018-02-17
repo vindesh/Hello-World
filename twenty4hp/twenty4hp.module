@@ -1,0 +1,182 @@
+<?php
+
+/**
+ * Implements hook_permission(). 
+ */
+function twenty4hp_permission() {
+  return array(
+    'administer 24hourproject configuration' => array(
+      'title' => t('access 24hourproject configuration screen'),
+      'description' => t('Access 24hourproject configuration screen.'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().  
+ */
+function twenty4hp_menu() {
+  $items = array();
+
+  $items['admin/config/system/twenty4hp/event-registration'] = array(
+    'title' => '24hourproject event registration',
+    'description' => 'Event registration list.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twenty4hp_configure'),
+    'access arguments' => array('administer 24hourproject configuration'),
+    'file' => 'twenty4hp.admin.inc',
+  );
+  $items['admin/config/system/twenty4hp/event-registration/list'] = array(
+    'title' => '24hourproject',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+
+  $items['admin/config/system/twenty4hp/event-registration/city'] = array(
+    'title' => 'Event registration city list',
+    'description' => 'Event registration city list.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twenty4hp_event_registration_city'),
+    'access arguments' => array('administer 24hourproject configuration'),
+    'file' => 'twenty4hp.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/system/twenty4hp/event-registration/country'] = array(
+    'title' => 'Event registration country list',
+    'description' => 'Event registration country list.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twenty4hp_event_registration_country'),
+    'access arguments' => array('administer 24hourproject configuration'),
+    'file' => 'twenty4hp.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/config/system/twenty4hp/event-registration/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('twenty4hp_settings'),
+    'access arguments' => array('administer 24hourproject configuration'),
+    'type' => MENU_LOCAL_TASK,
+    'file' => 'twenty4hp.admin.inc',
+  );
+
+ 
+  return $items;
+}
+
+function twenty4hp_form_alter(&$form, $form_state, $form_id) {
+  	if ($form_id == 'user_login_block' || $form_id == 'user_login') {
+    
+  	}  
+   	if ($form_id == 'photo_node_form') { 
+	   	if(isset($_GET['test']) && $_GET['test']=='vindesh'){
+	   
+	   }
+	}  
+}
+
+/**
+ * function to get number of event registration entry.
+ */
+function get_registration_entry($type = ''){	
+
+	$type = variable_get('twenty4hp_event_registration_type', '');
+	  
+	//$sql = "SELECT MAX(registration_id) as maxid FROM {registration}";
+	//SELECT COUNT(*) AS count FROM nvh_registration WHERE type = '24hourproject'  	
+  	//return db_query($sql)->fetchField();
+  	$query = db_select('registration', 'reg'); 
+  	$query->addExpression('COUNT(reg.registration_id)', 'count') ; 
+  	if(!empty($type)) {
+	    $query->condition('type', $type);
+	}
+	$result = $query->execute()->fetchField();  	
+	return $result;
+}
+
+
+/**
+ * function to get number of event registration entry of city.
+ * return number 
+ */
+function get_registration_entry_city($type = ''){	
+
+	$type = variable_get('twenty4hp_event_registration_type', '');   
+	// $sql = "select count(*), field_participant_location_regis_value from {field_data_field_participant_location_regis} group by field_participant_location_regis_value";
+	 //  	$result = db_query($sql)->fetchAll();  	
+	 //  	return count($result); 
+  	$query = db_select('field_data_field_participant_location_regis', 'part')->distinct(); 
+	  $query->fields('part', array('field_participant_location_regis_value'));	   
+	  if(!empty($type)) {
+	    $query->condition('bundle', $type);
+	  }
+	  $query->groupBy('part.field_participant_location_regis_value');
+  	$result = $query->execute();  	
+  	return $result->rowCount();	
+}
+
+/**
+ * function to get number of event registration entry of country.
+ * return number
+ */
+function get_registration_entry_country($type = ''){	
+
+	$type = variable_get('twenty4hp_event_registration_type', '');
+	   
+	/*$sql = "SELECT COUNT(*), SUBSTRING_INDEX(field_participant_location_regis_value, ',', -1) as country FROM {field_data_field_participant_location_regis} group by country";
+	$result = db_query($sql)->fetchAll();*/
+	  $query = db_select('field_data_field_participant_location_regis', 'part')->distinct();  
+	  //$query->fields('part', array('field_participant_location_regis_value'));
+	  //$query->addExpression('COUNT(part.field_participant_location_regis_value)', 'count') ; 
+	  $query->addExpression("SUBSTRING_INDEX(part.field_participant_location_regis_value, ',', -1)", 'country') ; 
+	  if(!empty($type)) {
+	    $query->condition('bundle', $type);
+	  }
+	  $query->groupBy('part.field_participant_location_regis_value');
+  	$result = $query->execute();
+
+  	return $result->rowCount();  	
+}
+
+/**
+ * function to get number of event registration entry of country.
+ * return registration entry ID if user registered or FALSE if not register in event. 
+ */
+function get_registration_entry_id(){
+	global $user; 
+	$sql = "SELECT reg.registration_id FROM {registration} reg INNER JOIN {field_data_field_participant_location_regis} part ON reg.registration_id = part.entity_id WHERE reg.user_uid = :uid ORDER BY reg.registration_id DESC";
+  	$result = db_query($sql, array(':uid'=> $user->uid) )->fetchField();
+  	if(empty($result))
+  		return FALSE;
+  		
+  	return $result;
+}
+
+
+function get_registration_entry_country1111(){ 
+	$query = db_select('field_data_field_participant_location_regis', 'n'); 
+	$query->fields('n', array('field_participant_location_regis_value')); 
+	$result = $query->execute()->fetchAll(); print_r($result);exit;
+	$country_array = array(); 
+	foreach($result as $key => $value){ //print_r($value);exit;
+		$str = $value->field_participant_location_regis_value; 
+		$country = end(explode(',' ,$str)); 
+		$country_array[] = $country; 
+	} 
+	$country_counts = array_count_values($country_array); 
+	return $country_counts; 
+}
+
+
+if(isset($_GET['test']) && $_GET['test']=='vindesh'){
+	// print 'city=' . get_registration_entry_city('24hourproject');
+	// print '<br>';
+	// print 'country=' . get_registration_entry_country('24hourproject');
+	print get_registration_entry('24hourproject');
+	exit('AAAAAAAAAAAAAAAAAAA');
+}
+
+
+
+
+
+
+
